@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Quiz</string>
+    <string name="quiz_title">クイズ</string>
+    <string name="start_button">クイズ スタート</string>
+    <string name="question_title">問題</string>
+    <string name="next_button">次へ</string>
+    <string name="result_title">結果</string>
+</resources>
