@@ -1,45 +1,78 @@
+@file:Suppress("SameParameterValue")
+
 package jp.ac.it_college.std.s20003.quiz2
 
+/*
 import android.annotation.SuppressLint
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Parcel
+import android.os.Parcelable
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-/*
 import com.opencsv.CSVIterator
 import com.opencsv.CSVReader
- */
-import jp.ac.it_college.std.s20003.quiz2.databinding.ActivityQuizBinding
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.StringReader
-import kotlin.collections.ArrayList
+*/
+import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.util.Log
+import androidx.annotation.UiThread
+import androidx.annotation.WorkerThread
+import androidx.core.os.HandlerCompat
+import jp.ac.it_college.std.s20003.quiz2.databinding.ActivityQuizBinding
+import org.json.JSONArray
+import org.json.JSONObject
+//import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.lang.Exception
+import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
+import java.net.URL
+import java.util.concurrent.Executors
+//import kotlin.collections.ArrayList
 
 class QuizActivity : AppCompatActivity() {
+    companion object {
+        private const val DEBUG_TAG = "Quiz2"
+        private const val QUIZDATA_URL =
+            "https://script.google.com/macros/s/AKfycbznWpk2m8q6lbLWSS6qaz3uS6j3L4zPwv7CqDEiC433YOgAdaFekGJmjoAO60quMg6l/exec"
+        private const val VERSION = "version"
+        private const val DATA = "data"
+    }
     private lateinit var binding: ActivityQuizBinding
+    /*
+    private var questionData: MutableList<String> = mutableListOf()
+    private var choicesData: MutableList<MutableMap<String, String>> = mutableListOf()
+    private var ansCount: Int = 0
+    private var qusCount: Int = 0
 
-    private var quizData: ArrayList<String> = arrayListOf()
-    //正解カウント
-    private var i: Int = 0
-    //問題数カウント
-    private var q: Int = 0
+     */
 
-
-    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityQuizBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        receiveWeatherInfo("$QUIZDATA_URL?f=$DATA")
+
+        binding.nextButton.setOnClickListener {
+            val intent = Intent(this, ResultActivity::class.java)
+            startActivity(intent)
+        }
 
 
+        /*
         val input = InputStreamReader(assets.open("QuizData.csv"))
         val reader = BufferedReader(input)
         val str = reader.readText()
         val strReader = StringReader(str)
-        /*
+
         val csv = CSVIterator(CSVReader(strReader))
 
         for (row in csv) {
@@ -48,7 +81,6 @@ class QuizActivity : AppCompatActivity() {
             }
         }
 
-         */
 
         val qusTitle: TextView = binding.questionTitle
         val qus: TextView = binding.question
@@ -182,8 +214,49 @@ class QuizActivity : AppCompatActivity() {
             }
         }
 
+         */
     }
 
+    private fun receiveWeatherInfo(urlFull: String) {
+        val handler = HandlerCompat.createAsync(mainLooper)
+        val executeService = Executors.newSingleThreadExecutor()
+
+        executeService.submit @WorkerThread {
+            var result = ""
+            val url = URL(urlFull)
+            val con = url.openConnection() as? HttpURLConnection
+            con?.let {
+                try {
+                    it.connectTimeout = 10000
+                    it.readTimeout = 10000
+                    it.requestMethod = "GET"
+                    it.connect()
+                    val stream = it.inputStream
+                    result = is2String(stream)
+                    stream.close()
+                } catch (e: SocketTimeoutException) {
+                    Log.w(DEBUG_TAG, "通信タイムアウト")
+                } catch (e: Exception) {
+                    Log.w(DEBUG_TAG, "例外")
+                }
+                it.disconnect()
+            }
+            handler.post @UiThread {
+                val rootJson = JSONArray(result)
+                val quizJson = rootJson.getJSONObject(0)
+                val questionJson = quizJson.getString("question")
+
+                binding.question.text = questionJson
+            }
+        }
+    }
+
+    private fun is2String(stream: InputStream?): String {
+        val reader = BufferedReader(InputStreamReader(stream, "UTF-8"))
+        return reader.readText()
+    }
+
+    /*
     private fun correct() {
         val choice1: Button = binding.button1
         val choice2: Button = binding.button2
@@ -218,4 +291,6 @@ class QuizActivity : AppCompatActivity() {
         choice3.isEnabled = false
         choice4.isEnabled = false
     }
+
+     */
 }

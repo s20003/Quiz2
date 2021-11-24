@@ -19,6 +19,5 @@ class MainActivity : AppCompatActivity() {
     private fun onStartButtonTapped() {
         val intent = Intent(this, QuizActivity::class.java)
         startActivity(intent)
-        //test
     }
 }
