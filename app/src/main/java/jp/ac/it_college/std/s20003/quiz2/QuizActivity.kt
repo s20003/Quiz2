@@ -1,33 +1,16 @@
-@file:Suppress("SameParameterValue")
-
 package jp.ac.it_college.std.s20003.quiz2
 
-/*
-import android.annotation.SuppressLint
-import android.content.Intent
-import android.os.CountDownTimer
-import android.os.Parcel
-import android.os.Parcelable
-import android.widget.Button
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import com.opencsv.CSVIterator
-import com.opencsv.CSVReader
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.StringReader
-*/
+
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.annotation.UiThread
 import androidx.annotation.WorkerThread
 import androidx.core.os.HandlerCompat
 import jp.ac.it_college.std.s20003.quiz2.databinding.ActivityQuizBinding
 import org.json.JSONArray
-import org.json.JSONObject
-//import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -36,8 +19,8 @@ import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.concurrent.Executors
-//import kotlin.collections.ArrayList
 
+@Suppress("SameParameterValue")
 class QuizActivity : AppCompatActivity() {
     companion object {
         private const val DEBUG_TAG = "Quiz2"
@@ -47,19 +30,22 @@ class QuizActivity : AppCompatActivity() {
         private const val DATA = "data"
     }
     private lateinit var binding: ActivityQuizBinding
+    private val helper = DatabaseHelper(this)
     /*
     private var questionData: MutableList<String> = mutableListOf()
     private var choicesData: MutableList<MutableMap<String, String>> = mutableListOf()
     private var ansCount: Int = 0
     private var qusCount: Int = 0
-
      */
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityQuizBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         receiveWeatherInfo("$QUIZDATA_URL?f=$DATA")
+
+        val db = helper.writableDatabase
 
         binding.nextButton.setOnClickListener {
             val intent = Intent(this, ResultActivity::class.java)
@@ -245,8 +231,28 @@ class QuizActivity : AppCompatActivity() {
                 val rootJson = JSONArray(result)
                 val quizJson = rootJson.getJSONObject(0)
                 val questionJson = quizJson.getString("question")
+                val choicesJson = quizJson.getJSONArray("choices")
+                val choice1 = choicesJson.getString(0)
+                val choice2 = choicesJson.getString(1)
+                val choice3 = choicesJson.getString(2)
+                val choice4 = choicesJson.getString(3)
+                val choice5 = choicesJson.getString(4)
+                val choice6 = choicesJson.getString(5)
 
                 binding.question.text = questionJson
+                binding.button1.text = choice1
+                binding.button2.text = choice2
+                binding.button3.text = choice3
+                binding.button4.text = choice4
+                binding.button5.text = choice5
+                binding.button6.text = choice6
+
+                if (binding.button5.text.isEmpty()) {
+                    binding.button5.visibility = View.GONE
+                }
+                if (binding.button6.text.isEmpty()) {
+                    binding.button6.visibility = View.GONE
+                }
             }
         }
     }
@@ -254,6 +260,11 @@ class QuizActivity : AppCompatActivity() {
     private fun is2String(stream: InputStream?): String {
         val reader = BufferedReader(InputStreamReader(stream, "UTF-8"))
         return reader.readText()
+    }
+
+    override fun onDestroy() {
+        helper.close()
+        super.onDestroy()
     }
 
     /*
