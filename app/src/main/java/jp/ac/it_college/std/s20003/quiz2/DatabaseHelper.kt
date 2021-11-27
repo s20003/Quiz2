@@ -17,7 +17,13 @@ class DatabaseHelper(context: Context) :SQLiteOpenHelper(
             CREATE TABLES quizdata (
                 _id      INTEGER PRIMARY KEY,
                 qustion  TEXT,
-                choice   TEXT
+                answer   LONG,
+                choice1  TEXT,
+                choice2  TEXT,
+                choice3  TEXT,
+                choice4  TEXT,
+                choice5  TEXT,
+                choice6  TEXT,
             );
         """.trimIndent()
         db?.execSQL(createTable)

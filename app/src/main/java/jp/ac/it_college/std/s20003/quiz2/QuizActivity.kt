@@ -25,9 +25,8 @@ class QuizActivity : AppCompatActivity() {
     companion object {
         private const val DEBUG_TAG = "Quiz2"
         private const val QUIZDATA_URL =
-            "https://script.google.com/macros/s/AKfycbznWpk2m8q6lbLWSS6qaz3uS6j3L4zPwv7CqDEiC433YOgAdaFekGJmjoAO60quMg6l/exec"
-        private const val VERSION = "version"
-        private const val DATA = "data"
+            "https://script.google.com/macros/s/AKfycbznWpk2m8q6lbLWSS6qaz3uS6j3L4zPwv7CqDEiC433YOgAdaFekGJmjoAO60quMg6l/exec?f="
+
     }
     private lateinit var binding: ActivityQuizBinding
     private val helper = DatabaseHelper(this)
@@ -43,9 +42,9 @@ class QuizActivity : AppCompatActivity() {
         binding = ActivityQuizBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        receiveWeatherInfo("$QUIZDATA_URL?f=$DATA")
+        receiveQuizData("${QUIZDATA_URL}data")
 
-        val db = helper.writableDatabase
+        //val db = helper.writableDatabase
 
         binding.nextButton.setOnClickListener {
             val intent = Intent(this, ResultActivity::class.java)
@@ -203,7 +202,7 @@ class QuizActivity : AppCompatActivity() {
          */
     }
 
-    private fun receiveWeatherInfo(urlFull: String) {
+    private fun receiveQuizData(urlFull: String) {
         val handler = HandlerCompat.createAsync(mainLooper)
         val executeService = Executors.newSingleThreadExecutor()
 
@@ -227,6 +226,7 @@ class QuizActivity : AppCompatActivity() {
                 }
                 it.disconnect()
             }
+
             handler.post @UiThread {
                 val rootJson = JSONArray(result)
                 val quizJson = rootJson.getJSONObject(0)
