@@ -29,7 +29,7 @@ class QuizActivity : AppCompatActivity() {
 
     }
     private lateinit var binding: ActivityQuizBinding
-    private val helper = DatabaseHelper(this)
+    private lateinit var helper: DatabaseHelper
     /*
     private var questionData: MutableList<String> = mutableListOf()
     private var choicesData: MutableList<MutableMap<String, String>> = mutableListOf()
@@ -43,8 +43,6 @@ class QuizActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         receiveQuizData("${QUIZDATA_URL}data")
-
-        //val db = helper.writableDatabase
 
         binding.nextButton.setOnClickListener {
             val intent = Intent(this, ResultActivity::class.java)
@@ -202,6 +200,15 @@ class QuizActivity : AppCompatActivity() {
          */
     }
 
+    override fun onResume() {
+        super.onResume()
+        receiveVersion("${ QUIZDATA_URL}version")
+    }
+
+    private fun receiveVersion(urlFull: String) {
+
+    }
+
     private fun receiveQuizData(urlFull: String) {
         val handler = HandlerCompat.createAsync(mainLooper)
         val executeService = Executors.newSingleThreadExecutor()
@@ -210,12 +217,14 @@ class QuizActivity : AppCompatActivity() {
             var result = ""
             val url = URL(urlFull)
             val con = url.openConnection() as? HttpURLConnection
+
             con?.let {
                 try {
-                    it.connectTimeout = 10000
-                    it.readTimeout = 10000
+                    it.connectTimeout = 20000
+                    it.readTimeout = 20000
                     it.requestMethod = "GET"
                     it.connect()
+
                     val stream = it.inputStream
                     result = is2String(stream)
                     stream.close()
@@ -229,16 +238,55 @@ class QuizActivity : AppCompatActivity() {
 
             handler.post @UiThread {
                 val rootJson = JSONArray(result)
-                val quizJson = rootJson.getJSONObject(0)
-                val questionJson = quizJson.getString("question")
-                val choicesJson = quizJson.getJSONArray("choices")
-                val choice1 = choicesJson.getString(0)
-                val choice2 = choicesJson.getString(1)
-                val choice3 = choicesJson.getString(2)
-                val choice4 = choicesJson.getString(3)
-                val choice5 = choicesJson.getString(4)
-                val choice6 = choicesJson.getString(5)
+                val num = rootJson.length()
+                helper = DatabaseHelper(this)
 
+                val db = helper.writableDatabase
+
+                val insert = """
+                    INSERT INTO quizData
+                    (_id, question, answer, choice1, choice2, choice3, choice4, choice5, choice6)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """.trimIndent()
+
+                val stmt = db.compileStatement(insert)
+
+                for (i in 0 until num) {
+                    val quizJson = rootJson.getJSONObject(i)
+                    val idJson = quizJson.getLong("id")
+                    val questionJson = quizJson.getString("question")
+                    val answersJson = quizJson.getLong("answers")
+                    val choicesJson = quizJson.getJSONArray("choices")
+                    val choice1 = choicesJson.getString(0)
+                    val choice2 = choicesJson.getString(1)
+                    val choice3 = choicesJson.getString(2)
+                    val choice4 = choicesJson.getString(3)
+                    val choice5 = choicesJson.getString(4)
+                    val choice6 = choicesJson.getString(5)
+
+                    stmt.run {
+                        bindLong(1, idJson)
+                        bindString(2,questionJson)
+                        bindLong(3, answersJson)
+                        bindString(4, choice1)
+                        bindString(5, choice2)
+                        bindString(6, choice3)
+                        bindString(7, choice4)
+                        bindString(8, choice5)
+                        bindString(9, choice6)
+                    }
+                    stmt.executeInsert()
+
+                    binding.question.text = questionJson
+                    binding.button1.text = choice1
+                    binding.button2.text = choice2
+                    binding.button3.text = choice3
+                    binding.button4.text = choice4
+                    binding.button5.text = choice5
+                    binding.button6.text = choice6
+                }
+
+                /*
                 binding.question.text = questionJson
                 binding.button1.text = choice1
                 binding.button2.text = choice2
@@ -246,6 +294,8 @@ class QuizActivity : AppCompatActivity() {
                 binding.button4.text = choice4
                 binding.button5.text = choice5
                 binding.button6.text = choice6
+
+                 */
 
                 if (binding.button5.text.isEmpty()) {
                     binding.button5.visibility = View.GONE
