@@ -16,7 +16,7 @@ class DatabaseHelper(context: Context) :SQLiteOpenHelper(
         val createTable = """
             CREATE TABLE quizData (
                 _id      INTEGER PRIMARY KEY,
-                question  TEXT,
+                question TEXT,
                 answer   LONG,
                 choice1  TEXT,
                 choice2  TEXT,

@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.View
 import androidx.annotation.UiThread
 import androidx.annotation.WorkerThread
+import androidx.appcompat.app.AlertDialog
 import androidx.core.os.HandlerCompat
 import jp.ac.it_college.std.s20003.quiz2.databinding.ActivityQuizBinding
 import org.json.JSONArray
@@ -17,22 +18,27 @@ import java.io.InputStreamReader
 import java.lang.Exception
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
-import java.net.URL
 import java.util.concurrent.Executors
+import java.net.URL as URL
 
-@Suppress("SameParameterValue")
 class QuizActivity : AppCompatActivity() {
     companion object {
         private const val DEBUG_TAG = "Quiz2"
         private const val QUIZDATA_URL =
             "https://script.google.com/macros/s/AKfycbznWpk2m8q6lbLWSS6qaz3uS6j3L4zPwv7CqDEiC433YOgAdaFekGJmjoAO60quMg6l/exec?f="
-
+        var answersJson: Long = 0
+        var questionJson: String = ""
+        var choice1: String = ""
+        var choice2: String = ""
+        var choice3: String = ""
+        var choice4: String = ""
+        var choice5: String = ""
+        var choice6: String = ""
     }
     private lateinit var binding: ActivityQuizBinding
     private lateinit var helper: DatabaseHelper
+    //private lateinit var oldVersion: String
     /*
-    private var questionData: MutableList<String> = mutableListOf()
-    private var choicesData: MutableList<MutableMap<String, String>> = mutableListOf()
     private var ansCount: Int = 0
     private var qusCount: Int = 0
      */
@@ -44,11 +50,11 @@ class QuizActivity : AppCompatActivity() {
 
         receiveQuizData("${QUIZDATA_URL}data")
 
+        binding.nextButton.isEnabled = false
         binding.nextButton.setOnClickListener {
             val intent = Intent(this, ResultActivity::class.java)
             startActivity(intent)
         }
-
 
         /*
         val input = InputStreamReader(assets.open("QuizData.csv"))
@@ -200,14 +206,6 @@ class QuizActivity : AppCompatActivity() {
          */
     }
 
-    override fun onResume() {
-        super.onResume()
-        receiveVersion("${ QUIZDATA_URL}version")
-    }
-
-    private fun receiveVersion(urlFull: String) {
-
-    }
 
     private fun receiveQuizData(urlFull: String) {
         val handler = HandlerCompat.createAsync(mainLooper)
@@ -238,35 +236,41 @@ class QuizActivity : AppCompatActivity() {
 
             handler.post @UiThread {
                 val rootJson = JSONArray(result)
-                val num = rootJson.length()
                 helper = DatabaseHelper(this)
 
                 val db = helper.writableDatabase
 
-                val insert = """
+                val sqlDelete = """
+                    DELETE FROM quizData;
+                """.trimIndent()
+                var stmt = db.compileStatement(sqlDelete)
+                stmt.executeUpdateDelete()
+
+                val sqlInsert = """
                     INSERT INTO quizData
                     (_id, question, answer, choice1, choice2, choice3, choice4, choice5, choice6)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """.trimIndent()
 
-                val stmt = db.compileStatement(insert)
+                stmt = db.compileStatement(sqlInsert)
 
+                val num = rootJson.length()
                 for (i in 0 until num) {
                     val quizJson = rootJson.getJSONObject(i)
                     val idJson = quizJson.getLong("id")
-                    val questionJson = quizJson.getString("question")
-                    val answersJson = quizJson.getLong("answers")
+                    questionJson = quizJson.getString("question")
+                    answersJson = quizJson.getLong("answers")
                     val choicesJson = quizJson.getJSONArray("choices")
-                    val choice1 = choicesJson.getString(0)
-                    val choice2 = choicesJson.getString(1)
-                    val choice3 = choicesJson.getString(2)
-                    val choice4 = choicesJson.getString(3)
-                    val choice5 = choicesJson.getString(4)
-                    val choice6 = choicesJson.getString(5)
+                    choice1 = choicesJson.getString(0)
+                    choice2 = choicesJson.getString(1)
+                    choice3 = choicesJson.getString(2)
+                    choice4 = choicesJson.getString(3)
+                    choice5 = choicesJson.getString(4)
+                    choice6 = choicesJson.getString(5)
 
                     stmt.run {
                         bindLong(1, idJson)
-                        bindString(2,questionJson)
+                        bindString(2, questionJson)
                         bindLong(3, answersJson)
                         bindString(4, choice1)
                         bindString(5, choice2)
@@ -277,32 +281,242 @@ class QuizActivity : AppCompatActivity() {
                     }
                     stmt.executeInsert()
 
-                    binding.question.text = questionJson
-                    binding.button1.text = choice1
-                    binding.button2.text = choice2
-                    binding.button3.text = choice3
-                    binding.button4.text = choice4
-                    binding.button5.text = choice5
-                    binding.button6.text = choice6
                 }
 
-                /*
+
+                val array = arrayOf(choice1, choice2, choice3, choice4, choice5, choice6)
+                val list: List<Int> = listOf(0, 1, 2, 3, 4, 5)
+                val shuffle: List<Int> = list.shuffled()
+
                 binding.question.text = questionJson
-                binding.button1.text = choice1
-                binding.button2.text = choice2
-                binding.button3.text = choice3
-                binding.button4.text = choice4
-                binding.button5.text = choice5
-                binding.button6.text = choice6
+                binding.button1.text = array[shuffle[0]]
+                binding.button2.text = array[shuffle[1]]
+                binding.button3.text = array[shuffle[2]]
+                binding.button4.text = array[shuffle[3]]
+                binding.button5.text = array[shuffle[4]]
+                binding.button6.text = array[shuffle[5]]
 
-                 */
-
+                if (binding.button1.text.isEmpty()) {
+                    binding.button1.visibility = View.GONE
+                }
+                if (binding.button2.text.isEmpty()) {
+                    binding.button2.visibility = View.GONE
+                }
+                if (binding.button3.text.isEmpty()) {
+                    binding.button3.visibility = View.GONE
+                }
+                if (binding.button4.text.isEmpty()) {
+                    binding.button4.visibility = View.GONE
+                }
                 if (binding.button5.text.isEmpty()) {
                     binding.button5.visibility = View.GONE
                 }
                 if (binding.button6.text.isEmpty()) {
                     binding.button6.visibility = View.GONE
                 }
+
+                when (answersJson) {
+                    2L -> {
+                        binding.button1.setOnClickListener {
+                            binding.nextButton.isEnabled = true
+                            if (binding.button1.text == choice1) {
+                                correct()
+                            } else {
+                                incorrect()
+                            }
+
+                        }
+                        binding.button2.setOnClickListener {
+                            binding.nextButton.isEnabled = true
+                            if (binding.button2.text == choice1) {
+                                correct()
+                            } else {
+                                incorrect()
+                            }
+                        }
+                        binding.button3.setOnClickListener {
+                            binding.nextButton.isEnabled = true
+                            if (binding.button3.text == choice1) {
+                                correct()
+                            } else {
+                                incorrect()
+                            }
+                        }
+                        binding.button4.setOnClickListener {
+                            binding.nextButton.isEnabled = true
+                            if (binding.button4.text == choice1) {
+                                correct()
+                            } else {
+                                incorrect()
+                            }
+                        }
+                        binding.button5.setOnClickListener {
+                            binding.nextButton.isEnabled = true
+                            if (binding.button5.text == choice1) {
+                                correct()
+                            } else {
+                                incorrect()
+                            }
+                        }
+                        binding.button6.setOnClickListener {
+                            binding.nextButton.isEnabled = true
+                            if (binding.button6.text == choice1) {
+                                correct()
+                            } else {
+                                incorrect()
+                            }
+                        }
+                    }
+                    1L -> {
+                        var n = 2
+                        binding.button1.setOnClickListener {
+
+                            when (binding.button1.text) {
+                                choice1 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                choice2 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                else -> incorrect()
+                            }
+
+                        }
+                        binding.button2.setOnClickListener {
+                            when (binding.button2.text) {
+                                choice1 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                choice2 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                else -> incorrect()
+                            }
+
+                        }
+                        binding.button3.setOnClickListener {
+                            when (binding.button3.text) {
+                                choice1 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                choice2 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                else -> incorrect()
+                            }
+
+                        }
+                        binding.button4.setOnClickListener {
+                            when (binding.button4.text) {
+                                choice1 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                choice2 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                else -> incorrect()
+                            }
+
+                        }
+                        binding.button5.setOnClickListener {
+                            when (binding.button5.text) {
+                                choice1 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                choice2 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                else -> incorrect()
+                            }
+
+                        }
+                        binding.button6.setOnClickListener {
+                            when (binding.button6.text) {
+                                choice1 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                choice2 -> {
+                                    when (n) {
+                                        2 -> {
+                                            n -= 1
+                                            correct2()
+                                        }
+                                        else -> correct()
+                                    }
+                                }
+                                else -> incorrect()
+                            }
+
+                        }
+                    }
+                }
+
             }
         }
     }
@@ -317,41 +531,44 @@ class QuizActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    /*
     private fun correct() {
-        val choice1: Button = binding.button1
-        val choice2: Button = binding.button2
-        val choice3: Button = binding.button3
-        val choice4: Button = binding.button4
 
         AlertDialog.Builder(this)
             .setTitle("正解!!")
             .setPositiveButton("OK", null)
             .show()
 
-        ++i
-        choice1.isEnabled = false
-        choice2.isEnabled = false
-        choice3.isEnabled = false
-        choice4.isEnabled = false
+        //++i
+        binding.button1.isEnabled = false
+        binding.button2.isEnabled = false
+        binding.button3.isEnabled = false
+        binding.button4.isEnabled = false
+        binding.button5.isEnabled = false
+        binding.button6.isEnabled = false
+        binding.nextButton.isEnabled = true
+    }
+
+    private fun correct2() {
+        AlertDialog.Builder(this)
+            .setTitle("もう一問!")
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun incorrect() {
-        val choice1: Button = binding.button1
-        val choice2: Button = binding.button2
-        val choice3: Button = binding.button3
-        val choice4: Button = binding.button4
 
         AlertDialog.Builder(this)
             .setTitle("不正解...")
             .setPositiveButton("OK", null)
             .show()
 
-        choice1.isEnabled = false
-        choice2.isEnabled = false
-        choice3.isEnabled = false
-        choice4.isEnabled = false
+        binding.button1.isEnabled = false
+        binding.button2.isEnabled = false
+        binding.button3.isEnabled = false
+        binding.button4.isEnabled = false
+        binding.button5.isEnabled = false
+        binding.button6.isEnabled = false
+        binding.nextButton.isEnabled = true
     }
 
-     */
 }
