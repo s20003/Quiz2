@@ -316,7 +316,7 @@ class QuizActivity : AppCompatActivity() {
                 }
 
                 when (answersJson) {
-                    2L -> {
+                    1L -> {
                         binding.button1.setOnClickListener {
                             binding.nextButton.isEnabled = true
                             if (binding.button1.text == choice1) {
@@ -367,7 +367,7 @@ class QuizActivity : AppCompatActivity() {
                             }
                         }
                     }
-                    1L -> {
+                    2L -> {
                         var n = 2
                         binding.button1.setOnClickListener {
 
