@@ -22,10 +22,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="150dp"
-        android:text="TextView"
         android:textSize="48sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/resultTitle" />
+        app:layout_constraintTop_toBottomOf="@+id/resultTitle"
+        tools:text="8 / 10" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

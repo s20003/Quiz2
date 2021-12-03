@@ -17,9 +17,7 @@ class ResultActivity : AppCompatActivity() {
         val ansCnt = intent.getIntExtra("ANSWER", 0)
         val ansView = ansCnt.toString()
 
-        val resultView = binding.resultView
-
-        resultView.text = "$ansView / 10"
+        binding.resultView.text = "$ansView / 10"
 
     }
 }
